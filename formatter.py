@@ -20,7 +20,7 @@ class ArabicFormatter:
             'shipping_section': "🚚 **معلومات الشحن:**\n",
             'rating_section': "⭐ **التقييمات:**\n",
             'seller_section': "🏪 **معلومات البائع:**\n",
-            'category_section': "📂 **الفئة:**\n",
+            'variants_section': "🎨 **المتغيرات المتاحة:**\n",
             'description_section': "📋 **وصف المنتج:**\n"
         }
     
@@ -39,7 +39,7 @@ class ArabicFormatter:
                 formatted_parts.append(f"[📸 صورة المنتج]({image_url})\n\n")
             
             # Price information
-            price_info = self._format_price_section(product_data)
+            price_info = self._format_price_section(product_data, shipping_data)
             if price_info:
                 formatted_parts.append(price_info)
             
@@ -47,11 +47,6 @@ class ArabicFormatter:
             rating_info = self._format_rating_section(product_data)
             if rating_info:
                 formatted_parts.append(rating_info)
-            
-            # Category information
-            category_info = self._format_category_section(product_data)
-            if category_info:
-                formatted_parts.append(category_info)
             
             # Seller information
             seller_info = self._format_seller_section(product_data)
@@ -63,10 +58,15 @@ class ArabicFormatter:
             if shipping_info:
                 formatted_parts.append(shipping_info)
             
-            # Product URL
-            product_url = self._get_product_url(product_data)
-            if product_url:
-                formatted_parts.append(f"🔗 **رابط المنتج:** [اضغط هنا للشراء]({product_url})\n\n")
+            # Product variants
+            variants_info = self._format_variants_section(product_data)
+            if variants_info:
+                formatted_parts.append(variants_info)
+            
+            # Product description (truncated if too long)
+            description = self._format_description_section(product_data)
+            if description:
+                formatted_parts.append(description)
             
             # Join all parts
             formatted_message = "".join(formatted_parts)
@@ -103,51 +103,37 @@ class ArabicFormatter:
         except:
             return ''
     
-    def _get_product_url(self, product_data: Dict[str, Any]) -> str:
-        """Extract product URL"""
-        try:
-            return product_data.get('product_detail_url', '')
-        except:
-            return ''
-    
-    def _format_price_section(self, product_data: Dict[str, Any]) -> str:
+    def _format_price_section(self, product_data: Dict[str, Any], shipping_data: Dict[str, Any] = None) -> str:
         """Format price information section"""
         try:
             price_section = self.templates['price_section']
             
-            # Get price info
-            original_price = product_data.get('original_price')
-            sale_price = product_data.get('sale_price')
+            # Get base price info
+            base_info = product_data.get('ae_item_base_info_dto', {})
             
-            if original_price:
-                price_section += f"• السعر الأصلي: ${original_price}\n"
+            if 'original_price' in base_info:
+                original_price = float(base_info['original_price'])
+                price_section += f"• السعر الأصلي: ${original_price:.2f}\n"
             
-            if sale_price:
-                price_section += f"• سعر البيع: **${sale_price}**\n"
+            if 'sale_price' in base_info:
+                sale_price = float(base_info['sale_price'])
+                price_section += f"• سعر البيع: **${sale_price:.2f}**\n"
                 
                 # Calculate discount if both prices available
-                if original_price and float(original_price) > float(sale_price):
-                    discount = ((float(original_price) - float(sale_price)) / float(original_price)) * 100
+                if 'original_price' in base_info and original_price > sale_price:
+                    discount = ((original_price - sale_price) / original_price) * 100
                     price_section += f"• الخصم: {discount:.0f}%\n"
             
-            # Add estimated shipping and total
-            base_price = float(sale_price or original_price or 0)
+            # Add shipping cost
+            shipping_cost = self._get_shipping_cost(shipping_data)
+            if shipping_cost > 0:
+                price_section += f"• تكلفة الشحن: ${shipping_cost:.2f}\n"
+            
+            # Calculate total
+            base_price = float(base_info.get('sale_price', base_info.get('original_price', 0)))
             if base_price > 0:
-                if base_price < 10:
-                    shipping = 2.99
-                elif base_price < 50:
-                    shipping = 5.99
-                else:
-                    shipping = 9.99
-                
-                price_section += f"• تكلفة الشحن المقدرة: ${shipping:.2f}\n"
-                
-                subtotal = base_price + shipping
-                tax = subtotal * 0.19  # 19% VAT estimate
-                total = subtotal + tax
-                
-                price_section += f"• الضرائب المقدرة (19%): ${tax:.2f}\n"
-                price_section += f"• **المجموع الكلي المقدر: ${total:.2f}**\n"
+                total = base_price + shipping_cost
+                price_section += f"• **المجموع الكلي: ${total:.2f}**\n"
             
             price_section += "\n"
             return price_section
@@ -156,22 +142,40 @@ class ArabicFormatter:
             logger.error(f"Error formatting price section: {e}")
             return ""
     
+    def _get_shipping_cost(self, shipping_data: Dict[str, Any]) -> float:
+        """Extract shipping cost from shipping data"""
+        try:
+            if not shipping_data:
+                return 0.0
+            
+            shipping_info = shipping_data.get('aeop_freight_calculate_result_for_buyers_dto', {})
+            
+            if 'freight' in shipping_info:
+                return float(shipping_info['freight'].get('cent', 0)) / 100
+            
+            return 0.0
+        except:
+            return 0.0
+    
     def _format_rating_section(self, product_data: Dict[str, Any]) -> str:
         """Format rating and review information"""
         try:
-            evaluate_rate = product_data.get('evaluate_rate')
+            base_info = product_data.get('ae_item_base_info_dto', {})
             
-            if not evaluate_rate:
+            avg_rating = base_info.get('avg_evaluation_rating')
+            review_count = base_info.get('evaluation_count')
+            
+            if not avg_rating and not review_count:
                 return ""
             
             rating_section = self.templates['rating_section']
             
-            try:
-                rating_value = float(evaluate_rate.rstrip('%'))
-                stars = "⭐" * min(5, max(1, int(rating_value / 20)))  # Convert percentage to 5-star scale
-                rating_section += f"• التقييم: {stars} ({evaluate_rate})\n"
-            except:
-                rating_section += f"• التقييم: {evaluate_rate}\n"
+            if avg_rating:
+                stars = "⭐" * int(float(avg_rating))
+                rating_section += f"• التقييم: {stars} ({avg_rating}/5)\n"
+            
+            if review_count:
+                rating_section += f"• عدد المراجعات: {review_count}\n"
             
             rating_section += "\n"
             return rating_section
@@ -180,46 +184,24 @@ class ArabicFormatter:
             logger.error(f"Error formatting rating section: {e}")
             return ""
     
-    def _format_category_section(self, product_data: Dict[str, Any]) -> str:
-        """Format category information"""
-        try:
-            first_level_category_name = product_data.get('first_level_category_name')
-            second_level_category_name = product_data.get('second_level_category_name')
-            
-            if not first_level_category_name and not second_level_category_name:
-                return ""
-            
-            category_section = self.templates['category_section']
-            
-            if first_level_category_name:
-                category_section += f"• الفئة الرئيسية: {first_level_category_name}\n"
-            
-            if second_level_category_name:
-                category_section += f"• الفئة الفرعية: {second_level_category_name}\n"
-            
-            category_section += "\n"
-            return category_section
-            
-        except Exception as e:
-            logger.error(f"Error formatting category section: {e}")
-            return ""
-    
     def _format_seller_section(self, product_data: Dict[str, Any]) -> str:
         """Format seller information"""
         try:
-            shop_id = product_data.get('shop_id')
-            shop_url = product_data.get('shop_url')
+            base_info = product_data.get('ae_item_base_info_dto', {})
             
-            if not shop_id and not shop_url:
+            seller_id = base_info.get('seller_id')
+            shop_id = base_info.get('shop_id')
+            
+            if not seller_id and not shop_id:
                 return ""
             
             seller_section = self.templates['seller_section']
             
+            if seller_id:
+                seller_section += f"• معرف البائع: {seller_id}\n"
+            
             if shop_id:
                 seller_section += f"• معرف المتجر: {shop_id}\n"
-            
-            if shop_url:
-                seller_section += f"• [زيارة المتجر]({shop_url})\n"
             
             seller_section += "\n"
             return seller_section
@@ -232,29 +214,86 @@ class ArabicFormatter:
         """Format shipping information"""
         try:
             if not shipping_data:
-                shipping_data = {
-                    'estimated_delivery': '15-30 يوم',
-                    'shipping_method': 'الشحن العادي',
-                    'destination': 'الجزائر'
-                }
+                return ""
             
             shipping_section = self.templates['shipping_section']
             
-            if 'estimated_delivery' in shipping_data:
-                shipping_section += f"• مدة التوصيل المقدرة: {shipping_data['estimated_delivery']}\n"
+            shipping_info = shipping_data.get('aeop_freight_calculate_result_for_buyers_dto', {})
             
-            if 'shipping_method' in shipping_data:
-                shipping_section += f"• طريقة الشحن: {shipping_data['shipping_method']}\n"
+            # Delivery time
+            if 'delivery_day_max' in shipping_info and 'delivery_day_min' in shipping_info:
+                min_days = shipping_info['delivery_day_min']
+                max_days = shipping_info['delivery_day_max']
+                shipping_section += f"• مدة التوصيل: {min_days}-{max_days} يوم\n"
             
-            if 'destination' in shipping_data:
-                shipping_section += f"• الوجهة: {shipping_data['destination']}\n"
+            # Shipping method
+            if 'service_name' in shipping_info:
+                service_name = shipping_info['service_name']
+                shipping_section += f"• طريقة الشحن: {service_name}\n"
             
-            shipping_section += "• ملاحظة: أوقات الشحن قد تختلف حسب الموقع والظروف\n"
+            # Destination
+            shipping_section += f"• الوجهة: الجزائر (DZ)\n"
+            
             shipping_section += "\n"
             return shipping_section
             
         except Exception as e:
             logger.error(f"Error formatting shipping section: {e}")
+            return ""
+    
+    def _format_variants_section(self, product_data: Dict[str, Any]) -> str:
+        """Format product variants (colors, sizes, etc.)"""
+        try:
+            sku_info = product_data.get('ae_item_sku_info_dtos', [])
+            
+            if not sku_info:
+                return ""
+            
+            variants_section = self.templates['variants_section']
+            
+            # Group variants by type
+            variant_groups = {}
+            
+            for sku in sku_info:
+                if 'ae_sku_property_dtos' in sku:
+                    for prop in sku['ae_sku_property_dtos']:
+                        prop_name = prop.get('sku_property_name', 'غير محدد')
+                        prop_value = prop.get('property_value_definition_name', 'غير محدد')
+                        
+                        if prop_name not in variant_groups:
+                            variant_groups[prop_name] = set()
+                        
+                        variant_groups[prop_name].add(prop_value)
+            
+            # Format variant groups
+            for group_name, values in variant_groups.items():
+                if len(values) > 0:
+                    values_str = "، ".join(sorted(values))
+                    variants_section += f"• {group_name}: {values_str}\n"
+            
+            if len(variant_groups) > 0:
+                variants_section += "\n"
+                return variants_section
+            
+            return ""
+            
+        except Exception as e:
+            logger.error(f"Error formatting variants section: {e}")
+            return ""
+    
+    def _format_description_section(self, product_data: Dict[str, Any]) -> str:
+        """Format product description (truncated)"""
+        try:
+            # This would typically come from product details
+            # For now, we'll use basic info
+            base_info = product_data.get('ae_item_base_info_dto', {})
+            
+            # We could add more description formatting here
+            # For now, just return empty as descriptions are usually too long
+            return ""
+            
+        except Exception as e:
+            logger.error(f"Error formatting description section: {e}")
             return ""
     
     def split_message(self, message: str) -> List[str]:
