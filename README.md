@@ -6,13 +6,13 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 
 - 🔗 **URL Parsing**: Supports all AliExpress URL formats (desktop, mobile, short links)
 - 🛍️ **Product Information**: Detailed product data including prices, images, and descriptions
-- 💰 **Price Calculation**: Shows prices in USD with shipping costs to Algeria
-- 📦 **Shipping Details**: Delivery time and shipping methods to Algeria
-- ⭐ **Ratings & Reviews**: Customer ratings and review counts
+- 💰 **Price Calculation**: Shows prices in USD with estimated shipping costs to Algeria
+- 📦 **Shipping Details**: Estimated delivery time and shipping methods to Algeria
+- ⭐ **Ratings & Reviews**: Customer ratings when available
 - 🏪 **Seller Information**: Store and seller details
-- 🎨 **Product Variants**: Available colors, sizes, and other options
 - 🇩🇿 **Arabic Support**: All responses in Arabic with RTL support
 - ⚡ **Async Processing**: Fast, non-blocking message handling
+- 🔓 **No OAuth Required**: Works with just App Key and App Secret
 
 ## Installation
 
@@ -36,7 +36,6 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
    - `TELEGRAM_BOT_TOKEN`: Get from @BotFather on Telegram
    - `ALIEXPRESS_APP_KEY`: Your AliExpress API app key
    - `ALIEXPRESS_APP_SECRET`: Your AliExpress API app secret
-   - `ALIEXPRESS_ACCESS_TOKEN`: Your API access token (optional)
 
 4. **Run the bot**:
    ```bash
@@ -52,18 +51,17 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather | Required |
 | `ALIEXPRESS_APP_KEY` | AliExpress API application key | Required |
 | `ALIEXPRESS_APP_SECRET` | AliExpress API application secret | Required |
-| `ALIEXPRESS_ACCESS_TOKEN` | API access token for authenticated requests | Optional |
 | `TARGET_CURRENCY` | Currency for price display | USD |
-| `TARGET_LANGUAGE` | Language for API responses | AR |
+| `TARGET_LANGUAGE` | Language for API responses | EN |
 | `SHIP_TO_COUNTRY` | Shipping destination country code | DZ |
-| `TAX_RATE` | Tax rate for price calculations | 0.1 |
 
 ### API Configuration
 
-The bot uses the following AliExpress Affiliate API endpoints:
-- `aliexpress.affiliate.productdetail.get` - Product details
-- `aliexpress.affiliate.product.sku.detail.get` - SKU details
-- `aliexpress.affiliate.product.shipping.get` - Shipping information
+The bot uses the following AliExpress Affiliate API endpoints (no OAuth required):
+- `aliexpress.affiliate.product.query` - Product search
+- `aliexpress.affiliate.hotproduct.query` - Hot products
+
+**Note**: This bot uses public API endpoints that don't require user authorization. Some advanced features like detailed shipping calculations may have limited functionality compared to authenticated APIs.
 
 ## Usage
 
@@ -83,13 +81,22 @@ The bot uses the following AliExpress Affiliate API endpoints:
 ```
 ├── main.py              # Application entry point
 ├── telegram_bot.py      # Telegram bot implementation
-├── aliexpress_api.py    # AliExpress API client
+├── aliexpress_api.py    # AliExpress API client (no OAuth)
 ├── link_parser.py       # URL parsing and extraction
 ├── formatter.py         # Arabic text formatting
 ├── requirements.txt     # Python dependencies
 ├── .env.example        # Environment variables template
 └── README.md           # Documentation
 ```
+
+## API Limitations
+
+Since this bot works without OAuth/user authorization:
+
+- **Product Search**: Uses keyword-based search to find products by ID
+- **Shipping Info**: Provides estimated shipping costs and delivery times
+- **Limited Data**: Some detailed product information may not be available
+- **Rate Limits**: Subject to public API rate limits
 
 ## Error Handling
 
@@ -102,12 +109,13 @@ The bot includes comprehensive error handling for:
 
 All error messages are displayed in Arabic for better user experience.
 
-## API Rate Limits
+## Getting AliExpress API Credentials
 
-The AliExpress API has rate limits. The bot includes:
-- Request throttling
-- Error retry mechanisms
-- Graceful degradation when limits are reached
+1. Visit the [AliExpress Open Platform](https://open.aliexpress.com/)
+2. Register for a developer account
+3. Create a new application
+4. Get your App Key and App Secret
+5. No OAuth setup required for this bot
 
 ## Contributing
 
@@ -134,3 +142,5 @@ This bot is for educational and personal use. Make sure to comply with:
 - AliExpress API terms of service
 - Telegram bot guidelines
 - Local regulations regarding e-commerce and affiliate marketing
+
+**Note**: This bot uses public APIs and provides estimated information. For the most accurate and up-to-date product details, users should visit the actual product pages on AliExpress.
