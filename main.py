@@ -7,6 +7,7 @@ Main entry point for the application
 import asyncio
 import logging
 import os
+import platform
 from dotenv import load_dotenv
 from telegram_bot import TelegramBot
 
@@ -51,6 +52,10 @@ async def main():
         raise
 
 if __name__ == '__main__':
+    # Fix for Windows compatibility - set appropriate event loop policy
+    if platform.system() == 'Windows':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
