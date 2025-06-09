@@ -1,9 +1,6 @@
 """
 AliExpress API Client
-<<<<<<< HEAD
 Handles all interactions with the AliExpress Affiliate API
-=======
-
 """
 
 import os
@@ -21,17 +18,13 @@ class AliExpressAPI:
     def __init__(self):
         self.app_key = os.getenv('ALIEXPRESS_APP_KEY')
         self.app_secret = os.getenv('ALIEXPRESS_APP_SECRET')
-
-        self.access_token = os.getenv('ALIEXPRESS_ACCESS_TOKEN')
         self.base_url = os.getenv('ALIEXPRESS_API_BASE_URL', 'https://api.aliexpress.com/sync')
-        self.sandbox = os.getenv('ALIEXPRESS_SANDBOX', 'false').lower() == 'true'
         
         # API Configuration
         self.target_currency = os.getenv('TARGET_CURRENCY', 'USD')
         self.target_language = os.getenv('TARGET_LANGUAGE', 'AR')
         self.ship_to_country = os.getenv('SHIP_TO_COUNTRY', 'DZ')
         self.tax_rate = float(os.getenv('TAX_RATE', '0.1'))
-
         
         self.session = None
     
@@ -79,12 +72,6 @@ class AliExpressAPI:
             'ship_to_country': self.ship_to_country
         }
         
-
-        if self.access_token:
-            params['session'] = self.access_token
-        
-
-
         return params
     
     async def _make_api_request(self, method: str, additional_params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
@@ -117,39 +104,37 @@ class AliExpressAPI:
             logger.error(f"Error making API request: {e}")
             return None
     
-
     async def get_product_details(self, product_id: str, sku_id: str = None) -> Optional[Dict[str, Any]]:
         """Get detailed product information"""
         try:
-            # Prepare parameters for product detail API
+            # Prepare parameters for product query API
             params = {
-                'product_ids': product_id,
-                'fields': 'product_id,product_title,product_main_image_url,product_video_url,ae_item_base_info_dto,ae_item_sku_info_dtos,ae_item_properties,logistics_info_dto,ae_multimedia_info_dto'
+                'fields': ','.join([
+                    'title',
+                    'sale_price', 
+                    'discount_rate',
+                    'evaluate_rate',
+                    'target_sale_price',
+                    'target_original_price',
+                    'shop_info',
+                    'promotion_link',
+                    'images',
+                    'product_id',
+                    'commission_rate'
+                ]),
+                'keywords': product_id  # Search by product ID
             }
             
-            # Call product detail API
+            # Call affiliate product query API
             response = await self._make_api_request(
-                'aliexpress.affiliate.productdetail.get',
+                'aliexpress.affiliate.product.query',
                 params
             )
             
-            if not response:
-                return None
-            
-            # Parse response
-            if 'aliexpress_affiliate_productdetail_get_response' in response:
-                result = response['aliexpress_affiliate_productdetail_get_response']['result']
-                
-                if result.get('products'):
-                    product_data = result['products'][0]
-                    
-                    # Get additional SKU details if SKU ID is provided
-                    if sku_id:
-                        sku_details = await self.get_sku_details(product_id, sku_id)
-                        if sku_details:
-                            product_data['sku_details'] = sku_details
-                    
-                    return product_data
+            if response and 'aliexpress_affiliate_product_query_response' in response:
+                result = response['aliexpress_affiliate_product_query_response']['result']
+                if result and 'products' and len(result['products']) > 0:
+                    return result['products'][0]  # Return first matching product
             
             return None
             
@@ -157,48 +142,23 @@ class AliExpressAPI:
             logger.error(f"Error getting product details: {e}")
             return None
     
-    async def get_sku_details(self, product_id: str, sku_id: str) -> Optional[Dict[str, Any]]:
-        """Get SKU-specific details"""
-        try:
-            params = {
-                'product_id': product_id,
-                'sku_id': sku_id,
-                'target_currency': self.target_currency,
-                'target_language': self.target_language,
-                'ship_to_country': self.ship_to_country
-            }
-            
-            response = await self._make_api_request(
-                'aliexpress.affiliate.product.sku.detail.get',
-                params
-            )
-            
-            if response and 'aliexpress_affiliate_product_sku_detail_get_response' in response:
-                return response['aliexpress_affiliate_product_sku_detail_get_response']['result']
-            
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error getting SKU details: {e}")
-            return None
-    
     async def get_shipping_info(self, product_id: str) -> Optional[Dict[str, Any]]:
         """Get shipping information for the product"""
         try:
             params = {
                 'product_id': product_id,
-                'send_goods_country_code': 'CN',  # Most AliExpress products ship from China
-                'target_country_code': self.ship_to_country,
-                'target_currency': self.target_currency
+                'target_currency': self.target_currency,
+                'country': self.ship_to_country,
+                'fields': 'logistics'
             }
             
             response = await self._make_api_request(
-                'aliexpress.affiliate.product.shipping.get',
+                'aliexpress.affiliate.logistics.get',
                 params
             )
             
-            if response and 'aliexpress_affiliate_product_shipping_get_response' in response:
-                return response['aliexpress_affiliate_product_shipping_get_response']['result']
+            if response and 'aliexpress_affiliate_logistics_get_response' in response:
+                return response['aliexpress_affiliate_logistics_get_response']['result']
             
             return None
             
@@ -206,43 +166,10 @@ class AliExpressAPI:
             logger.error(f"Error getting shipping info: {e}")
             return None
     
-    async def search_products(self, keywords: str, page_size: int = 10) -> Optional[Dict[str, Any]]:
-        """Search for products (optional method for future use)"""
-
-        try:
-            params = {
-                'keywords': keywords,
-                'page_size': page_size,
-                'sort': 'default',
-                'target_currency': self.target_currency,
-                'target_language': self.target_language,
-                'ship_to_country': self.ship_to_country
-            }
-            
-            response = await self._make_api_request(
-                'aliexpress.affiliate.product.query',
-                params
-            )
-            
-            if response and 'aliexpress_affiliate_product_query_response' in response:
-
-                return response['aliexpress_affiliate_product_query_response']['result']
-
-            
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error searching products: {e}")
-            return None
-    
-
     def calculate_total_price(self, base_price: float, shipping_cost: float = 0) -> Dict[str, float]:
         """Calculate total price including shipping and taxes"""
         subtotal = base_price + shipping_cost
         tax_amount = subtotal * self.tax_rate
-
-
-
         total = subtotal + tax_amount
         
         return {

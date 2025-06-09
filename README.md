@@ -36,10 +36,8 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
    
    Edit `.env` and add your credentials:
    - `TELEGRAM_BOT_TOKEN`: Get from @BotFather on Telegram
-   - `ALIEXPRESS_APP_KEY`: Your AliExpress API app key
-   - `ALIEXPRESS_APP_SECRET`: Your AliExpress API app secret
-<<<<<<< HEAD
-   - `ALIEXPRESS_ACCESS_TOKEN`: Your API access token (optional)
+   - `ALIEXPRESS_APP_KEY`: Your AliExpress API app key from AliExpress Affiliate portal
+   - `ALIEXPRESS_APP_SECRET`: Your AliExpress API app secret from AliExpress Affiliate portal
 
 
 4. **Run the bot**:
@@ -56,8 +54,6 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather | Required |
 | `ALIEXPRESS_APP_KEY` | AliExpress API application key | Required |
 | `ALIEXPRESS_APP_SECRET` | AliExpress API application secret | Required |
-<<<<<<< HEAD
-| `ALIEXPRESS_ACCESS_TOKEN` | API access token for authenticated requests | Optional |
 | `TARGET_CURRENCY` | Currency for price display | USD |
 | `TARGET_LANGUAGE` | Language for API responses | AR |
 | `SHIP_TO_COUNTRY` | Shipping destination country code | DZ |
@@ -66,9 +62,8 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 ### API Configuration
 
 The bot uses the following AliExpress Affiliate API endpoints:
-- `aliexpress.affiliate.productdetail.get` - Product details
-- `aliexpress.affiliate.product.sku.detail.get` - SKU details
-- `aliexpress.affiliate.product.shipping.get` - Shipping information
+- `aliexpress.affiliate.product.query` - Search and get product details
+- `aliexpress.affiliate.logistics.get` - Get shipping information
 
 
 ## Usage
@@ -89,9 +84,7 @@ The bot uses the following AliExpress Affiliate API endpoints:
 ```
 ├── main.py              # Application entry point
 ├── telegram_bot.py      # Telegram bot implementation
-<<<<<<< HEAD
-├── aliexpress_api.py    # AliExpress API client
-=======
+├── aliexpress_api.py    # AliExpress Affiliate API client
 
 ├── link_parser.py       # URL parsing and extraction
 ├── formatter.py         # Arabic text formatting

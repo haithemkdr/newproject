@@ -4,10 +4,8 @@ Handles all Telegram bot interactions and message processing
 """
 
 import logging
-import asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.constants import ParseMode
+from telegram import Update, ParseMode
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import os
 
 from link_parser import AliExpressLinkParser
@@ -22,29 +20,27 @@ class TelegramBot:
         self.link_parser = AliExpressLinkParser()
         self.api = AliExpressAPI()
         self.formatter = ArabicFormatter()
-        self.application = None
+        self.updater = None
         
     async def start(self):
         """Start the Telegram bot"""
-        # Create application
-        self.application = Application.builder().token(self.token).build()
+        # Create updater and dispatcher
+        self.updater = Updater(token=self.token, use_context=True)
+        dispatcher = self.updater.dispatcher
         
         # Add handlers
-        self.application.add_handler(CommandHandler("start", self.start_command))
-        self.application.add_handler(CommandHandler("help", self.help_command))
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+        dispatcher.add_handler(CommandHandler("start", self.start_command))
+        dispatcher.add_handler(CommandHandler("help", self.help_command))
+        dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, self.handle_message))
         
-        # Start polling
-        await self.application.initialize()
-        await self.application.start()
-        await self.application.updater.start_polling()
+        # Start the bot
+        logger.info("Starting Telegram Bot...")
+        self.updater.start_polling()
         
-        logger.info("Bot started successfully!")
-        
-        # Keep the bot running
-        await asyncio.Event().wait()
+        # Block until the user presses Ctrl-C
+        self.updater.idle()
     
-    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    def start_command(self, update: Update, context: CallbackContext):
         """Handle /start command"""
         welcome_text = """
 🛍️ **مرحباً بك في بوت معلومات منتجات علي إكسبريس!**
@@ -62,12 +58,12 @@ class TelegramBot:
 ما عليك سوى إرسال رابط المنتج وسأتولى الباقي! 📦
         """
         
-        await update.message.reply_text(
+        update.message.reply_text(
             welcome_text, 
             parse_mode=ParseMode.MARKDOWN
         )
     
-    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    def help_command(self, update: Update, context: CallbackContext):
         """Handle /help command"""
         help_text = """
 🔗 **كيفية استخدام البوت:**
@@ -89,12 +85,12 @@ class TelegramBot:
 إذا واجهت أي مشاكل، تأكد من أن الرابط صحيح ومن علي إكسبريس.
         """
         
-        await update.message.reply_text(
+        update.message.reply_text(
             help_text,
             parse_mode=ParseMode.MARKDOWN
         )
     
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_message(self, update: Update, context: CallbackContext):
         """Handle incoming messages"""
         message_text = update.message.text.strip()
         
@@ -110,7 +106,7 @@ class TelegramBot:
 • https://a.aliexpress.com/_mNvN...
 • https://m.aliexpress.com/item/...
             """
-            await update.message.reply_text(
+            update.message.reply_text(
                 error_message,
                 parse_mode=ParseMode.MARKDOWN
             )
@@ -162,18 +158,11 @@ class TelegramBot:
                 await processing_message.delete()
                 
                 for i, chunk in enumerate(chunks):
-                    if i == 0:
-                        await update.message.reply_text(
-                            chunk,
-                            parse_mode=ParseMode.MARKDOWN,
-                            disable_web_page_preview=False
-                        )
-                    else:
-                        await update.message.reply_text(
-                            chunk,
-                            parse_mode=ParseMode.MARKDOWN,
-                            disable_web_page_preview=True
-                        )
+                    await update.message.reply_text(
+                        chunk,
+                        parse_mode=ParseMode.MARKDOWN,
+                        disable_web_page_preview=(i > 0)
+                    )
             else:
                 await processing_message.edit_text(
                     formatted_response,
@@ -189,7 +178,6 @@ class TelegramBot:
     
     async def stop(self):
         """Stop the bot gracefully"""
-        if self.application:
-            await self.application.stop()
-            await self.application.shutdown()
+        if self.updater:
+            self.updater.stop()
             logger.info("Bot stopped successfully!")
