@@ -1,6 +1,9 @@
 """
 AliExpress API Client
+<<<<<<< HEAD
 Handles all interactions with the AliExpress Affiliate API
+=======
+
 """
 
 import os
@@ -18,6 +21,7 @@ class AliExpressAPI:
     def __init__(self):
         self.app_key = os.getenv('ALIEXPRESS_APP_KEY')
         self.app_secret = os.getenv('ALIEXPRESS_APP_SECRET')
+
         self.access_token = os.getenv('ALIEXPRESS_ACCESS_TOKEN')
         self.base_url = os.getenv('ALIEXPRESS_API_BASE_URL', 'https://api.aliexpress.com/sync')
         self.sandbox = os.getenv('ALIEXPRESS_SANDBOX', 'false').lower() == 'true'
@@ -27,6 +31,7 @@ class AliExpressAPI:
         self.target_language = os.getenv('TARGET_LANGUAGE', 'AR')
         self.ship_to_country = os.getenv('SHIP_TO_COUNTRY', 'DZ')
         self.tax_rate = float(os.getenv('TAX_RATE', '0.1'))
+
         
         self.session = None
     
@@ -74,9 +79,12 @@ class AliExpressAPI:
             'ship_to_country': self.ship_to_country
         }
         
+
         if self.access_token:
             params['session'] = self.access_token
         
+
+
         return params
     
     async def _make_api_request(self, method: str, additional_params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
@@ -109,6 +117,7 @@ class AliExpressAPI:
             logger.error(f"Error making API request: {e}")
             return None
     
+
     async def get_product_details(self, product_id: str, sku_id: str = None) -> Optional[Dict[str, Any]]:
         """Get detailed product information"""
         try:
@@ -199,6 +208,7 @@ class AliExpressAPI:
     
     async def search_products(self, keywords: str, page_size: int = 10) -> Optional[Dict[str, Any]]:
         """Search for products (optional method for future use)"""
+
         try:
             params = {
                 'keywords': keywords,
@@ -215,7 +225,9 @@ class AliExpressAPI:
             )
             
             if response and 'aliexpress_affiliate_product_query_response' in response:
+
                 return response['aliexpress_affiliate_product_query_response']['result']
+
             
             return None
             
@@ -223,10 +235,14 @@ class AliExpressAPI:
             logger.error(f"Error searching products: {e}")
             return None
     
+
     def calculate_total_price(self, base_price: float, shipping_cost: float = 0) -> Dict[str, float]:
         """Calculate total price including shipping and taxes"""
         subtotal = base_price + shipping_cost
         tax_amount = subtotal * self.tax_rate
+
+
+
         total = subtotal + tax_amount
         
         return {

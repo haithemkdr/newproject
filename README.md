@@ -6,6 +6,7 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 
 - 🔗 **URL Parsing**: Supports all AliExpress URL formats (desktop, mobile, short links)
 - 🛍️ **Product Information**: Detailed product data including prices, images, and descriptions
+<<<<<<< HEAD
 - 💰 **Price Calculation**: Shows prices in USD with shipping costs to Algeria
 - 📦 **Shipping Details**: Delivery time and shipping methods to Algeria
 - ⭐ **Ratings & Reviews**: Customer ratings and review counts
@@ -13,6 +14,7 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 - 🎨 **Product Variants**: Available colors, sizes, and other options
 - 🇩🇿 **Arabic Support**: All responses in Arabic with RTL support
 - ⚡ **Async Processing**: Fast, non-blocking message handling
+
 
 ## Installation
 
@@ -36,7 +38,9 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
    - `TELEGRAM_BOT_TOKEN`: Get from @BotFather on Telegram
    - `ALIEXPRESS_APP_KEY`: Your AliExpress API app key
    - `ALIEXPRESS_APP_SECRET`: Your AliExpress API app secret
+<<<<<<< HEAD
    - `ALIEXPRESS_ACCESS_TOKEN`: Your API access token (optional)
+
 
 4. **Run the bot**:
    ```bash
@@ -52,6 +56,7 @@ A comprehensive Telegram bot that processes AliExpress product links and provide
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather | Required |
 | `ALIEXPRESS_APP_KEY` | AliExpress API application key | Required |
 | `ALIEXPRESS_APP_SECRET` | AliExpress API application secret | Required |
+<<<<<<< HEAD
 | `ALIEXPRESS_ACCESS_TOKEN` | API access token for authenticated requests | Optional |
 | `TARGET_CURRENCY` | Currency for price display | USD |
 | `TARGET_LANGUAGE` | Language for API responses | AR |
@@ -64,6 +69,7 @@ The bot uses the following AliExpress Affiliate API endpoints:
 - `aliexpress.affiliate.productdetail.get` - Product details
 - `aliexpress.affiliate.product.sku.detail.get` - SKU details
 - `aliexpress.affiliate.product.shipping.get` - Shipping information
+
 
 ## Usage
 
@@ -83,13 +89,19 @@ The bot uses the following AliExpress Affiliate API endpoints:
 ```
 ├── main.py              # Application entry point
 ├── telegram_bot.py      # Telegram bot implementation
+<<<<<<< HEAD
 ├── aliexpress_api.py    # AliExpress API client
+=======
+
 ├── link_parser.py       # URL parsing and extraction
 ├── formatter.py         # Arabic text formatting
 ├── requirements.txt     # Python dependencies
 ├── .env.example        # Environment variables template
 └── README.md           # Documentation
 ```
+
+<<<<<<< HEAD
+=======
 
 ## Error Handling
 
@@ -102,6 +114,7 @@ The bot includes comprehensive error handling for:
 
 All error messages are displayed in Arabic for better user experience.
 
+<<<<<<< HEAD
 ## API Rate Limits
 
 The AliExpress API has rate limits. The bot includes:
@@ -133,4 +146,6 @@ For support or questions:
 This bot is for educational and personal use. Make sure to comply with:
 - AliExpress API terms of service
 - Telegram bot guidelines
+<<<<<<< HEAD
 - Local regulations regarding e-commerce and affiliate marketing
+
